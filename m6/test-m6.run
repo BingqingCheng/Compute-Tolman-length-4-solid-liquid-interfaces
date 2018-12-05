@@ -1,0 +1,4 @@
+srun -n $SLURM_NTASKS plumed driver --ixyz fcc.xyz --plumed ../m6-plumed.dat &> p.run.log
+
+wait
+

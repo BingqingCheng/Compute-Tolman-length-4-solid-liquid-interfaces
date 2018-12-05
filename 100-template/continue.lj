@@ -1,0 +1,39 @@
+atom_style      atomic
+units           lj
+dimension       3
+boundary        p p p
+processors      * * 1
+
+variable seed equal 92RRR8
+variable temper equal 0.58
+variable zstress equal 0.0
+variable thermotau equal 0.1
+variable barotau equal 5.0
+
+read_restart  EQUILIBRATED.restart
+
+# pair styles
+pair_style table linear 5000
+pair_coeff 1 1 tr-lj.table TR_LJ 2.5
+#pair_coeff * 2 tr-lj.table NULL 2.5
+
+# Simulation params
+timestep 0.004
+neighbor 1.0 bin
+thermo 100 
+thermo_style custom step time temp ke pe etotal press pxx pyy pzz lx ly lz
+thermo_modify flush yes
+#dump coord all xyz 1000 traj.xyz
+
+velocity all create ${temper} ${seed} dist gaussian
+
+reset_timestep  0
+# production
+fix 1 all nph z ${zstress} ${zstress} ${barotau}
+fix 2 all temp/csvr ${temper} ${temper} ${thermotau} ${seed}
+fix 3 all plumed   plumedfile  post-plumed.dat     outfile p.log
+restart 20000 restart.*
+
+run 100000000
+
+write_restart FINAL.restart

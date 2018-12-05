@@ -1,0 +1,4 @@
+plumed driver --ixyz fcc.xyz --plumed ../q6-plumed.dat &> p.run.log
+
+wait
+

@@ -1,0 +1,23 @@
+#!/bin/bash -l
+#
+# LAMMPS on Piz Daint: 64 nodes, 2 MPI tasks per node, 1 OpenMP thread per task
+#
+#SBATCH -A s787
+#SBATCH --job-name=LJ
+#SBATCH --time=04:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=12
+#SBATCH --cpus-per-task=1
+#SBATCH --partition=normal
+#SBATCH --constraint=gpu
+
+#========================================
+# load modules and run simulation
+module load PrgEnv-gnu fftw 
+
+export PLUMED_MAXBACKUP=20000
+
+srun -n $SLURM_NTASKS plumed driver --ixyz fcc.xyz --plumed ../q6-plumed.dat &> p.run.log
+
+wait
+
