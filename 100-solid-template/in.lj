@@ -1,0 +1,66 @@
+atom_style      atomic
+units           lj
+dimension       3
+boundary        p p p
+processors      * * 1
+
+variable seed equal 9001
+variable temper equal 0.58
+variable zstress equal 0.0
+variable thermotau equal 0.1
+variable barotau equal 5.0
+
+variable latparam equal 1.6144
+variable reducedrho equal 4/(${latparam}^3)
+variable xdim equal 40
+variable ydim equal 40
+variable zdim equal 40
+
+# Define the lattice: we want to study (110) interface that is along the Z direction
+lattice fcc ${reducedrho} orient x 1 0 0 orient y 0 1 0 orient z 0 0 1
+region box block 0 ${xdim} 0 ${ydim} 0 ${zdim} units lattice
+create_box 1 box
+create_atoms 1 box
+mass 1 1.0
+
+# pair styles
+pair_style table linear 5000
+pair_coeff 1 1 tr-lj.table TR_LJ 2.5
+#pair_coeff * 2 tr-lj.table NULL 2.5
+
+# Write initial data file
+write_data ./lj.z110.init.data
+
+# Regions and group
+region zcenter block 0 INF 0 INF $(lz/3) $(2*lz/3) side in units box
+group solid region zcenter
+group free subtract all solid
+
+# Simulation params
+timestep 0.004
+neighbor 1.0 bin
+thermo 100 
+thermo_style custom step time temp ke pe etotal press pxx pyy pzz lx ly lz
+thermo_modify flush yes
+#dump coord all xyz 1000 traj.xyz
+
+### SIMULATION STARTS HERE ###
+velocity all create ${temper} ${seed} dist gaussian
+
+# equilibrate all
+fix equal2 all nvt temp ${temper} ${temper} ${thermotau}
+run 10000
+unfix equal2
+
+write_restart EQUILIBRATED.restart
+
+reset_timestep  0
+# production
+fix 1 all nph z ${zstress} ${zstress} ${barotau}
+fix 2 all temp/csvr ${temper} ${temper} ${thermotau} ${seed}
+fix 3 all plumed   plumedfile  post-plumed.dat     outfile p.log
+restart 200000 restart.*
+
+run 100000000
+
+write_restart FINAL.restart
